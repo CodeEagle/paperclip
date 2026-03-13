@@ -16,7 +16,7 @@ application:
       backend: http://paperclip:3100/
 services:
   paperclip:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:b63b5eb0301ae0f8
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:05ea8e269b66cfc8
     depends_on:
       - postgres
     command: >-
