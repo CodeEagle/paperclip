@@ -147,7 +147,7 @@ jobs:
           set -euo pipefail
           git clone --depth=1 --branch "${{ steps.version.outputs.source_ref }}" "https://github.com/${{ env.UPSTREAM_REPO }}.git" /tmp/upstream-paperclip
           SOURCE_COMMIT="$(git -C /tmp/upstream-paperclip rev-parse --short=12 HEAD)"
-          echo "source_commit=$SOURCE_COMMIT" >> "$GITHUB_ENV"
+          echo "SOURCE_COMMIT=$SOURCE_COMMIT" >> "$GITHUB_ENV"
 
       - name: Build and push GHCR image
         if: steps.check.outputs.update_needed == 'true'
