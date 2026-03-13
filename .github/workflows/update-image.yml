@@ -44,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          TARGET_VERSION="${{ inputs.target_version }}"
+          TARGET_VERSION_RAW="${{ inputs.target_version }}"
           SOURCE_REF=""
           BUILD_VERSION=""
           RELEASE_NOTES=""
@@ -58,14 +58,18 @@ jobs:
             esac
           }
 
-          if [ -n "$TARGET_VERSION" ]; then
+          TARGET_VERSION="$(normalize_version "$TARGET_VERSION_RAW")"
+
+          if [ -n "$TARGET_VERSION_RAW" ]; then
             BUILD_VERSION="$TARGET_VERSION"
-            if gh api "repos/${{ env.UPSTREAM_REPO }}/git/ref/tags/v$TARGET_VERSION" >/dev/null 2>&1; then
+            if gh api "repos/${{ env.UPSTREAM_REPO }}/git/ref/tags/$TARGET_VERSION_RAW" >/dev/null 2>&1; then
+              SOURCE_REF="$TARGET_VERSION_RAW"
+            elif gh api "repos/${{ env.UPSTREAM_REPO }}/git/ref/tags/v$TARGET_VERSION" >/dev/null 2>&1; then
               SOURCE_REF="v$TARGET_VERSION"
             elif gh api "repos/${{ env.UPSTREAM_REPO }}/git/ref/tags/paperclipai@$TARGET_VERSION" >/dev/null 2>&1; then
               SOURCE_REF="paperclipai@$TARGET_VERSION"
             else
-              echo "Unable to resolve source ref for target version $TARGET_VERSION" >&2
+              echo "Unable to resolve source ref for target version $TARGET_VERSION_RAW" >&2
               exit 1
             fi
             RELEASE_NOTES="Build Paperclip $BUILD_VERSION"
