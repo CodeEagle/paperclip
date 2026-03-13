@@ -154,7 +154,8 @@ jobs:
         id: ghcr
         run: |
           set -euo pipefail
-          IMAGE_REF="ghcr.io/${{ github.repository }}:${SOURCE_COMMIT}"
+          TARGET_HEAD_SHA="$(printf '%s\n' '${{ github.sha }}' | cut -c1-12)"
+          IMAGE_REF="ghcr.io/${{ github.repository }}:${TARGET_HEAD_SHA}"
           IMAGE_REF="$(printf '%s\n' "$IMAGE_REF" | tr '[:upper:]' '[:lower:]')"
           docker buildx build \
             --platform linux/amd64 \
