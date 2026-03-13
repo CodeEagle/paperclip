@@ -51,10 +51,10 @@ services:
       for i in $(seq 1 60); do
       node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" &&
       break; sleep 2; done;
-      if [ ! -f "$$CONFIG_PATH" ]; then timeout 60s node /app/cli/node_modules/tsx/dist/cli.mjs /app/cli/src/index.ts onboard --yes --data-dir "$$PAPERCLIP_HOME"
+      if [ ! -f "$$CONFIG_PATH" ]; then timeout 60s pnpm paperclipai onboard --yes --data-dir "$$PAPERCLIP_HOME"
       >"$$BOOTSTRAP_LOG" 2>&1 || true; else : >"$$BOOTSTRAP_LOG"; fi;
       if ! grep -q "/invite/pcp_bootstrap_" "$$BOOTSTRAP_LOG" 2>/dev/null; then
-      if timeout 20s node /app/cli/node_modules/tsx/dist/cli.mjs /app/cli/src/index.ts auth bootstrap-ceo --data-dir "$$PAPERCLIP_HOME"
+      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$$PAPERCLIP_HOME"
       --base-url "$$PAPERCLIP_PUBLIC_URL" >>"$$BOOTSTRAP_LOG" 2>&1; then
       true; else status=$$?; [ "$$status" = "124" ] || echo
       "bootstrap-ceo exited with status $$status" >>"$$BOOTSTRAP_LOG"; fi; fi;
@@ -66,8 +66,6 @@ services:
       exec node /lzcapp/pkg/content/bootstrap-ui/server.mjs'
     environment:
       - PORT=8080
-      - COREPACK_ENABLE_NETWORK=0
-      - COREPACK_ENABLE=0
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - PAPERCLIP_HOME=/paperclip
       - PAPERCLIP_DEPLOYMENT_MODE=authenticated
