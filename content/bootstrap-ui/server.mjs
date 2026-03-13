@@ -119,6 +119,8 @@ function bootstrapPage(initialState) {
 function proxyHttp(req, res) {
   const isHttps = target.protocol === "https:";
   const requestImpl = isHttps ? https.request : http.request;
+  const forwardedProto = req.headers["x-forwarded-proto"] || "https";
+  const forwardedHost = req.headers["x-forwarded-host"] || req.headers.host || "";
   const upstreamReq = requestImpl(
     {
       protocol: target.protocol,
@@ -128,7 +130,9 @@ function proxyHttp(req, res) {
       path: req.url,
       headers: {
         ...req.headers,
-        host: target.host,
+        host: req.headers.host,
+        "x-forwarded-host": forwardedHost,
+        "x-forwarded-proto": forwardedProto,
       },
     },
     (upstreamRes) => {
@@ -149,7 +153,7 @@ function proxyUpgrade(req, socket, head) {
     for (let i = 0; i < req.rawHeaders.length; i += 2) {
       const key = req.rawHeaders[i];
       const value = req.rawHeaders[i + 1];
-      upstream.write(`${key}: ${key.toLowerCase() === "host" ? target.host : value}\r\n`);
+      upstream.write(`${key}: ${value}\r\n`);
     }
     upstream.write("\r\n");
     if (head.length > 0) upstream.write(head);
