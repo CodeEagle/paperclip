@@ -16,7 +16,7 @@ application:
       backend: http://paperclip:3100/
 services:
   paperclip:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:c0103736b41e5224
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:66bbe03234c59e43
     environment:
       - HOST=0.0.0.0
       - PORT=3100
