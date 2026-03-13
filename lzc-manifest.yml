@@ -27,15 +27,15 @@ services:
       for i in $(seq 1 60); do
       node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)"
       && break; sleep 2; done;
-      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME"
-      --base-url "$PAPERCLIP_PUBLIC_URL" >"$BOOTSTRAP_LOG" 2>&1; then
-      true; else status=$?; [ "$status" = "124" ] || echo
-      "bootstrap-ceo exited with status $status" >>"$BOOTSTRAP_LOG"; fi;
-      cat "$BOOTSTRAP_LOG";
-      invite_url="$(grep -o "https\\?://[^[:space:]]*/invite/pcp_bootstrap_[[:alnum:]]*"
-      "$BOOTSTRAP_LOG" | tail -n 1 || true)";
-      if [ -n "$invite_url" ]; then printf "%s\n" "$invite_url" | tee
-      "$BOOTSTRAP_URL_FILE"; fi;
+      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$$PAPERCLIP_HOME"
+      --base-url "$$PAPERCLIP_PUBLIC_URL" >"$$BOOTSTRAP_LOG" 2>&1; then
+      true; else status=$$?; [ "$$status" = "124" ] || echo
+      "bootstrap-ceo exited with status $$status" >>"$$BOOTSTRAP_LOG"; fi;
+      cat "$$BOOTSTRAP_LOG";
+      invite_url="$$(grep -o "https\\?://[^[:space:]]*/invite/pcp_bootstrap_[[:alnum:]]*"
+      "$$BOOTSTRAP_LOG" | tail -n 1 || true)";
+      if [ -n "$$invite_url" ]; then printf "%s\n" "$$invite_url" | tee
+      "$$BOOTSTRAP_URL_FILE"; fi;
       exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip

@@ -68,7 +68,7 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 
 ## 构建与发布
 
-仓库内的 `.github/workflows/update-image.yml` 会执行以下流程：
+仓库内的 `.github/workflows/update-image.yml` 只作为目标 workflow 存在，由 `CodeEagle/lzcat-trigger` 统一触发；不再在目标仓库内自行定时触发。实际流程为：
 
 1. 获取上游最新 semver 版本
 2. 从上游源码 tag 构建 `ghcr.io/CodeEagle/paperclip:<source-commit-sha>`
