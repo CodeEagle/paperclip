@@ -15,22 +15,33 @@ async function readInviteUrl() {
 }
 
 async function getPaperclipHealth() {
+  const inviteUrl = await readInviteUrl();
   try {
     const response = await fetch(new URL("/api/health", target), {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {
-      return { reachable: false, bootstrapPending: true, bootstrapInviteActive: false, inviteUrl: "" };
+      return {
+        reachable: false,
+        bootstrapPending: true,
+        bootstrapInviteActive: Boolean(inviteUrl),
+        inviteUrl,
+      };
     }
     const data = await response.json();
     return {
       reachable: true,
       bootstrapPending: data.bootstrapStatus === "bootstrap_pending",
       bootstrapInviteActive: Boolean(data.bootstrapInviteActive),
-      inviteUrl: await readInviteUrl(),
+      inviteUrl,
     };
   } catch {
-    return { reachable: false, bootstrapPending: true, bootstrapInviteActive: false, inviteUrl: "" };
+    return {
+      reachable: false,
+      bootstrapPending: Boolean(inviteUrl),
+      bootstrapInviteActive: Boolean(inviteUrl),
+      inviteUrl,
+    };
   }
 }
 
@@ -154,7 +165,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(state));
     return;
   }
-  if (state.bootstrapPending && (req.url === "/" || req.url?.startsWith("/?"))) {
+  if ((state.bootstrapPending || state.inviteUrl) && (req.url === "/" || req.url?.startsWith("/?"))) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     res.end(bootstrapPage(state));
     return;
