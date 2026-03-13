@@ -26,22 +26,18 @@ services:
       export PAPERCLIP_CONFIG=/paperclip/instances/default/config.json;
       export PAPERCLIP_PUBLIC_URL="https://${LAZYCAT_APP_DOMAIN}";
       export CONFIG_PATH=/paperclip/instances/default/config.json;
-      export INSTANCE_ROOT=/paperclip/instances/default;
       export BOOTSTRAP_LOG=/paperclip/instances/default/bootstrap-invite.log;
       export BOOTSTRAP_URL_FILE=/paperclip/instances/default/bootstrap-invite-url.txt;
-      install -d -m 0755
-      /paperclip
-      /paperclip/instances
-      "$INSTANCE_ROOT"
-      "$INSTANCE_ROOT/logs"
-      "$INSTANCE_ROOT/data"
-      "$INSTANCE_ROOT/data/storage"
-      "$INSTANCE_ROOT/data/backups"
-      "$INSTANCE_ROOT/data/run-logs"
-      "$INSTANCE_ROOT/data/plugins"
-      "$INSTANCE_ROOT/secrets"
-      "$INSTANCE_ROOT/workspaces"
-      "$INSTANCE_ROOT/plugins";
+      mkdir -p /paperclip;
+      mkdir -p /paperclip/instances/default;
+      mkdir -p /paperclip/instances/default/logs;
+      mkdir -p /paperclip/instances/default/data/storage;
+      mkdir -p /paperclip/instances/default/data/backups;
+      mkdir -p /paperclip/instances/default/data/run-logs;
+      mkdir -p /paperclip/instances/default/data/plugins;
+      mkdir -p /paperclip/instances/default/secrets;
+      mkdir -p /paperclip/instances/default/workspaces;
+      mkdir -p /paperclip/instances/default/plugins;
       : > "$BOOTSTRAP_LOG";
       for i in $(seq 1 60); do
       node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" &&
