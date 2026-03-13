@@ -50,7 +50,7 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 仓库内的 `.github/workflows/update-image.yml` 会执行以下流程：
 
 1. 获取上游最新 semver 版本
-2. 从上游源码 tag 构建 `ghcr.io/CodeEagle/paperclip:<version>`
+2. 从上游源码 tag 构建 `ghcr.io/CodeEagle/paperclip:<source-commit-sha>`
 3. 复制镜像到 `registry.lazycat.cloud/...`
 4. 精确更新 `lzc-manifest.yml` 与 `.lazycat-build.json`
 5. 生成 `.lpk` 并发布 GitHub Release

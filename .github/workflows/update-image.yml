@@ -146,13 +146,15 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth=1 --branch "${{ steps.version.outputs.source_ref }}" "https://github.com/${{ env.UPSTREAM_REPO }}.git" /tmp/upstream-paperclip
+          SOURCE_COMMIT="$(git -C /tmp/upstream-paperclip rev-parse --short=12 HEAD)"
+          echo "source_commit=$SOURCE_COMMIT" >> "$GITHUB_ENV"
 
       - name: Build and push GHCR image
         if: steps.check.outputs.update_needed == 'true'
         id: ghcr
         run: |
           set -euo pipefail
-          IMAGE_REF="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.build_version }}"
+          IMAGE_REF="ghcr.io/${{ github.repository }}:${SOURCE_COMMIT}"
           IMAGE_REF="$(printf '%s\n' "$IMAGE_REF" | tr '[:upper:]' '[:lower:]')"
           docker buildx build \
             --platform linux/amd64 \
@@ -187,6 +189,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           manifest_path = Path("lzc-manifest.yml")
@@ -223,7 +226,8 @@ jobs:
           Path(".lazycat-build.json").write_text(json.dumps({
             "upstream_repo": "paperclipai/paperclip",
             "source_version": "${{ steps.version.outputs.source_ref }}",
-            "build_version": "${{ steps.version.outputs.build_version }}"
+            "build_version": "${{ steps.version.outputs.build_version }}",
+            "source_commit": os.environ["SOURCE_COMMIT"]
           }, indent=2) + "\n")
           PY
 
@@ -256,8 +260,6 @@ jobs:
 
       - name: Commit and push manifest updates
         if: steps.check.outputs.update_needed == 'true'
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
           set -euo pipefail
           git config --local user.email "action@github.com"
@@ -269,11 +271,4 @@ jobs:
           fi
 
           git commit -m "Update Paperclip to version ${{ steps.version.outputs.build_version }}"
-
-          mkdir -p ~/.ssh
-          printf '%s' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf 'Host github.com\n  Hostname ssh.github.com\n  Port 443\n  User git\n  StrictHostKeyChecking no\n' >> ~/.ssh/config
-
-          git remote set-url origin git@github.com:CodeEagle/paperclip.git
           git push origin HEAD:main
