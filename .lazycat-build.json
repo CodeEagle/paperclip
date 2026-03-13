@@ -1,6 +1,6 @@
 {
-  "upstream_repo": "paperclipai/paperclip",
   "source_version": "v0.3.1",
   "build_version": "0.3.1",
-  "source_commit": "63c62e3ada07"
+  "build_label": "v0.3.1@20260313T073313Z",
+  "last_checked_at": "2026-03-13T07:33:13.955437+00:00"
 }
