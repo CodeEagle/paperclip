@@ -20,35 +20,26 @@ services:
     depends_on:
       - postgres
     command: >-
-      /bin/bash -lc 'set -euo pipefail;
-      export PAPERCLIP_HOME=/paperclip;
-      export PAPERCLIP_INSTANCE_ID=default;
-      export PAPERCLIP_CONFIG=/paperclip/instances/default/config.json;
-      export PAPERCLIP_PUBLIC_URL="https://${LAZYCAT_APP_DOMAIN}";
-      export CONFIG_PATH=/paperclip/instances/default/config.json;
-      export BOOTSTRAP_LOG=/paperclip/instances/default/bootstrap-invite.log;
-      export BOOTSTRAP_URL_FILE=/paperclip/instances/default/bootstrap-invite-url.txt;
-      mkdir -p /paperclip;
-      mkdir -p /paperclip/instances/default;
-      mkdir -p /paperclip/instances/default/logs;
-      mkdir -p /paperclip/instances/default/data/storage;
-      mkdir -p /paperclip/instances/default/data/backups;
-      mkdir -p /paperclip/instances/default/data/run-logs;
-      mkdir -p /paperclip/instances/default/data/plugins;
-      mkdir -p /paperclip/instances/default/secrets;
-      mkdir -p /paperclip/instances/default/workspaces;
-      mkdir -p /paperclip/instances/default/plugins;
-      : > "$BOOTSTRAP_LOG";
+      /bin/bash -lc 'mkdir -p /paperclip/instances/default/logs &&
+      chown -R 1000:1000 /paperclip;
+      CONFIG_PATH=/paperclip/instances/default/config.json;
+      BOOTSTRAP_LOG=/paperclip/instances/default/bootstrap-invite.log;
+      BOOTSTRAP_URL_FILE=/paperclip/instances/default/bootstrap-invite-url.txt;
       for i in $(seq 1 60); do
       node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" &&
       break; sleep 2; done;
-      if [ ! -f "$CONFIG_PATH" ]; then timeout 60s pnpm paperclipai onboard --yes --data-dir "$PAPERCLIP_HOME" >>"$BOOTSTRAP_LOG" 2>&1 || true; fi;
-      if ! grep -q "/invite/pcp_bootstrap_" "$BOOTSTRAP_LOG" 2>/dev/null; then
-      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME" --base-url "$PAPERCLIP_PUBLIC_URL" >>"$BOOTSTRAP_LOG" 2>&1; then
-      true; else status=$?; [ "$status" = "124" ] || echo "bootstrap-ceo exited with status $status" >>"$BOOTSTRAP_LOG"; fi; fi;
-      cat "$BOOTSTRAP_LOG";
-      invite_url="$(grep -o "https\\?://[^[:space:]]*/invite/pcp_bootstrap_[[:alnum:]]*" "$BOOTSTRAP_LOG" | tail -n 1 || true)";
-      if [ -n "$invite_url" ]; then printf "%s\n" "$invite_url" | tee "$BOOTSTRAP_URL_FILE"; fi;
+      if [ ! -f "$$CONFIG_PATH" ]; then timeout 60s pnpm paperclipai onboard --yes --data-dir "$$PAPERCLIP_HOME"
+      >"$$BOOTSTRAP_LOG" 2>&1 || true; else : >"$$BOOTSTRAP_LOG"; fi;
+      if ! grep -q "/invite/pcp_bootstrap_" "$$BOOTSTRAP_LOG" 2>/dev/null; then
+      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$$PAPERCLIP_HOME"
+      --base-url "$$PAPERCLIP_PUBLIC_URL" >>"$$BOOTSTRAP_LOG" 2>&1; then
+      true; else status=$$?; [ "$$status" = "124" ] || echo
+      "bootstrap-ceo exited with status $$status" >>"$$BOOTSTRAP_LOG"; fi; fi;
+      cat "$$BOOTSTRAP_LOG";
+      invite_url="$$(grep -o "https\\?://[^[:space:]]*/invite/pcp_bootstrap_[[:alnum:]]*"
+      "$$BOOTSTRAP_LOG" | tail -n 1 || true)";
+      if [ -n "$$invite_url" ]; then printf "%s\n" "$$invite_url" | tee
+      "$$BOOTSTRAP_URL_FILE"; fi;
       exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
@@ -56,12 +47,6 @@ services:
       - PORT=3100
       - SERVE_UI=true
       - PAPERCLIP_HOME=/paperclip
-      - PAPERCLIP_INSTANCE_ID=default
-      - PAPERCLIP_CONFIG=/paperclip/instances/default/config.json
-      - PAPERCLIP_LOG_DIR=/paperclip/instances/default/logs
-      - PAPERCLIP_STORAGE_LOCAL_DIR=/paperclip/instances/default/data/storage
-      - PAPERCLIP_SECRETS_MASTER_KEY_FILE=/paperclip/instances/default/secrets/master.key
-      - RUN_LOG_BASE_PATH=/paperclip/instances/default/data/run-logs
       - PAPERCLIP_DEPLOYMENT_MODE=authenticated
       - PAPERCLIP_DEPLOYMENT_EXPOSURE=private
       - BETTER_AUTH_SECRET=paperclip-lazycat-auth-secret
