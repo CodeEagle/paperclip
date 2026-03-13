@@ -6,12 +6,15 @@
 
 Paperclip 是一个面向多智能体团队协作的开源运营平台，提供任务编排、组织结构、预算治理、审计日志和 Web 控制台。
 
-本迁移仓库采用上游官方 Dockerfile 源码构建镜像，默认使用单容器模式运行：
+本迁移仓库采用上游官方 Dockerfile 源码构建镜像，运行时使用 `paperclip + postgres` 两服务模式：
 
 - Web 入口：`/`
 - 容器内端口：`3100`
-- 数据目录：`/paperclip`
-- 持久化挂载：`/lzcapp/var/data -> /paperclip`
+- 应用数据目录：`/paperclip`
+- 数据库目录：`/var/lib/postgresql/data`
+- 持久化挂载：
+  - `/lzcapp/var/data -> /paperclip`
+  - `/lzcapp/var/db/paperclip/postgres -> /var/lib/postgresql/data`
 
 ## 首次启动
 
@@ -21,6 +24,10 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
   用于认证签名，未配置时应用无法完成认证模式启动。
 - `PAPERCLIP_PUBLIC_URL`
   建议设置为懒猫分配给应用的实际访问地址，避免登录回调或邀请链接指向错误地址。
+
+数据库连接由 manifest 内置：
+
+- `DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip`
 
 默认环境变量：
 
@@ -38,9 +45,10 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 
 ## 数据说明
 
-根据上游 `doc/DOCKER.md`，以下内容都会保存在 `/paperclip` 中，并由懒猫持久化到 `/lzcapp/var/data`：
+根据上游 `doc/DOCKER.md` 和当前迁移拓扑，以下数据会被持久化：
 
-- 内嵌 PostgreSQL 数据
+- Paperclip 本地文件、附件、workspace 与实例目录：`/lzcapp/var/data`
+- PostgreSQL 数据：`/lzcapp/var/db/paperclip/postgres`
 - 上传附件
 - 本地 secrets key
 - 本地 agent 工作目录

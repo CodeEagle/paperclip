@@ -17,10 +17,13 @@ application:
 services:
   paperclip:
     image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:94012abbe2c6a89a
+    depends_on:
+      - postgres
     setup_script: |
       mkdir -p /paperclip/instances/default/logs
       chown -R 1000:1000 /paperclip
     environment:
+      - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - HOST=0.0.0.0
       - PORT=3100
       - SERVE_UI=true
@@ -33,6 +36,14 @@ services:
       - ANTHROPIC_API_KEY
     binds:
       - /lzcapp/var/data:/paperclip
+  postgres:
+    image: registry.lazycat.cloud/invokerlaw/library/postgres:d0ff70664cf393ab
+    environment:
+      - POSTGRES_USER=paperclip
+      - POSTGRES_PASSWORD=paperclip
+      - POSTGRES_DB=paperclip
+    binds:
+      - /lzcapp/var/db/paperclip/postgres:/var/lib/postgresql/data
 locales:
   en:
     name: Paperclip
