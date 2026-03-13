@@ -45,6 +45,8 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 - 本地 secrets key
 - 本地 agent 工作目录
 
+为避免懒猫挂载目录默认属主导致的写权限问题，manifest 会在启动前自动创建 `/paperclip/instances/default/logs` 并把 `/paperclip` 递归授权给容器内 `node` 用户。
+
 ## 构建与发布
 
 仓库内的 `.github/workflows/update-image.yml` 会执行以下流程：

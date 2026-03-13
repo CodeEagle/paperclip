@@ -17,6 +17,9 @@ application:
 services:
   paperclip:
     image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:66bbe03234c59e43
+    setup_script: |
+      mkdir -p /paperclip/instances/default/logs
+      chown -R 1000:1000 /paperclip
     environment:
       - HOST=0.0.0.0
       - PORT=3100
