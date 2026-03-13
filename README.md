@@ -40,7 +40,18 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 
 首次启动时，`paperclip` 服务会自动执行：
 
-- `pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME" --base-url "$PAPERCLIP_PUBLIC_URL"`
+- 先显式准备上游默认实例目录：
+  - `/paperclip/instances/default/logs`
+  - `/paperclip/instances/default/data/storage`
+  - `/paperclip/instances/default/data/backups`
+  - `/paperclip/instances/default/data/run-logs`
+  - `/paperclip/instances/default/data/plugins`
+  - `/paperclip/instances/default/secrets`
+  - `/paperclip/instances/default/workspaces`
+  - `/paperclip/instances/default/plugins`
+- 然后执行：
+  - `pnpm paperclipai onboard --yes --data-dir "$PAPERCLIP_HOME"`
+  - `pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME" --base-url "$PAPERCLIP_PUBLIC_URL"`
 
 生成出的首个 CEO 邀请链接会被写入：
 
@@ -60,11 +71,18 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 
 - Paperclip 本地文件、附件、workspace 与实例目录：`/lzcapp/var/data`
 - PostgreSQL 数据：`/lzcapp/var/db/paperclip/postgres`
-- 上传附件
-- 本地 secrets key
-- 本地 agent 工作目录
+- 其中会包含这些上游默认路径：
+  - `/paperclip/instances/default/config.json`
+  - `/paperclip/instances/default/logs`
+  - `/paperclip/instances/default/data/storage`
+  - `/paperclip/instances/default/data/backups`
+  - `/paperclip/instances/default/data/run-logs`
+  - `/paperclip/instances/default/data/plugins`
+  - `/paperclip/instances/default/secrets/master.key`
+  - `/paperclip/instances/default/workspaces`
+  - `/paperclip/instances/default/plugins`
 
-为避免懒猫挂载目录默认属主导致的写权限问题，manifest 会在启动前自动创建 `/paperclip/instances/default/logs` 并把 `/paperclip` 递归授权给容器内 `node` 用户。
+为避免懒猫挂载目录权限导致的首次启动失败，manifest 会在启动前一次性准备整棵上游默认实例目录，而不是只创建单个 `logs` 目录。
 
 ## 构建与发布
 
