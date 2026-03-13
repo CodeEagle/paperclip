@@ -19,9 +19,13 @@ services:
     image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:9478db74fed3a02d
     depends_on:
       - postgres
-    setup_script: |
-      mkdir -p /paperclip/instances/default/logs
-      chown -R 1000:1000 /paperclip
+    command: >-
+      /bin/bash -lc 'mkdir -p /paperclip/instances/default/logs &&
+      chown -R 1000:1000 /paperclip;
+      for i in $(seq 1 60); do
+      node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)"
+      && break; sleep 2; done;
+      exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - HOST=0.0.0.0
@@ -44,6 +48,11 @@ services:
       - POSTGRES_DB=paperclip
     binds:
       - /lzcapp/var/db/paperclip/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 locales:
   en:
     name: Paperclip
