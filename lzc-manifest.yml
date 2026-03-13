@@ -34,8 +34,8 @@ services:
       - PAPERCLIP_HOME=/paperclip
       - PAPERCLIP_DEPLOYMENT_MODE=authenticated
       - PAPERCLIP_DEPLOYMENT_EXPOSURE=private
-      - BETTER_AUTH_SECRET
-      - PAPERCLIP_PUBLIC_URL
+      - BETTER_AUTH_SECRET=paperclip-lazycat-auth-secret
+      - PAPERCLIP_PUBLIC_URL=https://${LAZYCAT_APP_DOMAIN}
       - OPENAI_API_KEY
       - ANTHROPIC_API_KEY
     binds:

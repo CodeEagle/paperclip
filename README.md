@@ -18,12 +18,12 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 
 ## 首次启动
 
-首次安装后，至少需要确认以下配置：
+首次安装后，认证相关变量默认按懒猫环境预置：
 
-- `BETTER_AUTH_SECRET`
-  用于认证签名，未配置时应用无法完成认证模式启动。
-- `PAPERCLIP_PUBLIC_URL`
-  建议设置为懒猫分配给应用的实际访问地址，避免登录回调或邀请链接指向错误地址。
+- `BETTER_AUTH_SECRET=paperclip-lazycat-auth-secret`
+  默认提供一份可启动的认证签名密钥，避免 `authenticated` 模式因缺失密钥直接启动失败；如需更高安全性，可在后续版本改为用户自定义。
+- `PAPERCLIP_PUBLIC_URL=https://${LAZYCAT_APP_DOMAIN}`
+  默认绑定到懒猫分配给应用的实际访问地址，避免登录回调或邀请链接指向错误地址。
 
 数据库连接由 manifest 内置：
 
