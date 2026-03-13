@@ -67,6 +67,7 @@ services:
     environment:
       - PORT=8080
       - COREPACK_ENABLE_NETWORK=0
+      - COREPACK_ENABLE=0
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - PAPERCLIP_HOME=/paperclip
       - PAPERCLIP_DEPLOYMENT_MODE=authenticated
