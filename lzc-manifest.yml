@@ -13,7 +13,7 @@ application:
     - /
   upstreams:
     - location: /
-      backend: http://paperclip:3100/
+      backend: http://bootstrap-ui:8080/
 services:
   paperclip:
     image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:05ea8e269b66cfc8
@@ -22,9 +22,20 @@ services:
     command: >-
       /bin/bash -lc 'mkdir -p /paperclip/instances/default/logs &&
       chown -R 1000:1000 /paperclip;
+      BOOTSTRAP_LOG=/paperclip/instances/default/bootstrap-invite.log;
+      BOOTSTRAP_URL_FILE=/paperclip/instances/default/bootstrap-invite-url.txt;
       for i in $(seq 1 60); do
       node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)"
       && break; sleep 2; done;
+      if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME"
+      --base-url "$PAPERCLIP_PUBLIC_URL" >"$BOOTSTRAP_LOG" 2>&1; then
+      true; else status=$?; [ "$status" = "124" ] || echo
+      "bootstrap-ceo exited with status $status" >>"$BOOTSTRAP_LOG"; fi;
+      cat "$BOOTSTRAP_LOG";
+      invite_url="$(grep -o "https\\?://[^[:space:]]*/invite/pcp_bootstrap_[[:alnum:]]*"
+      "$BOOTSTRAP_LOG" | tail -n 1 || true)";
+      if [ -n "$invite_url" ]; then printf "%s\n" "$invite_url" | tee
+      "$BOOTSTRAP_URL_FILE"; fi;
       exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
@@ -36,8 +47,20 @@ services:
       - PAPERCLIP_DEPLOYMENT_EXPOSURE=private
       - BETTER_AUTH_SECRET=paperclip-lazycat-auth-secret
       - PAPERCLIP_PUBLIC_URL=https://${LAZYCAT_APP_DOMAIN}
+      - PAPERCLIP_BOOTSTRAP_INVITE_PATH=/paperclip/instances/default/bootstrap-invite-url.txt
       - OPENAI_API_KEY
       - ANTHROPIC_API_KEY
+    binds:
+      - /lzcapp/var/data:/paperclip
+  bootstrap-ui:
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:b63b5eb0301ae0f8
+    depends_on:
+      - paperclip
+    command: node /lzcapp/pkg/content/bootstrap-ui/server.mjs
+    environment:
+      - PORT=8080
+      - PAPERCLIP_INTERNAL_URL=http://paperclip:3100
+      - PAPERCLIP_BOOTSTRAP_INVITE_PATH=/paperclip/instances/default/bootstrap-invite-url.txt
     binds:
       - /lzcapp/var/data:/paperclip
   postgres:

@@ -6,7 +6,7 @@
 
 Paperclip 是一个面向多智能体团队协作的开源运营平台，提供任务编排、组织结构、预算治理、审计日志和 Web 控制台。
 
-本迁移仓库采用上游官方 Dockerfile 源码构建镜像，运行时使用 `paperclip + postgres` 两服务模式：
+本迁移仓库采用上游官方 Dockerfile 源码构建镜像，运行时使用 `bootstrap-ui + paperclip + postgres` 三服务模式：
 
 - Web 入口：`/`
 - 容器内端口：`3100`
@@ -37,6 +37,17 @@ Paperclip 是一个面向多智能体团队协作的开源运营平台，提供�
 - `PORT=3100`
 - `SERVE_UI=true`
 - `PAPERCLIP_HOME=/paperclip`
+
+首次启动时，`paperclip` 服务会自动执行：
+
+- `pnpm paperclipai auth bootstrap-ceo --data-dir "$PAPERCLIP_HOME" --base-url "$PAPERCLIP_PUBLIC_URL"`
+
+生成出的首个 CEO 邀请链接会被写入：
+
+- `/paperclip/instances/default/bootstrap-invite.log`
+- `/paperclip/instances/default/bootstrap-invite-url.txt`
+
+`bootstrap-ui` 前置服务会在还没有首个 admin 时先展示自定义启动页，并把这个 URL 渲染成可点击按钮；当首个 admin 创建完成后，其余请求会直接透传到 Paperclip。
 
 可选环境变量：
 
