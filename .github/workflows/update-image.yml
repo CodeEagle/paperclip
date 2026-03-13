@@ -1,6 +1,12 @@
 name: Update Paperclip Image
 
+# IMPORTANT:
+# - 此 workflow 只作为目标 workflow 存在
+# - 正式构建入口统一使用 CodeEagle/lzcat-trigger
+# - 不要在目标仓库内自行增加 schedule 作为主入口
+
 on:
+  # 仅供 lzcat-trigger 调用
   workflow_dispatch:
     inputs:
       force_build:
@@ -9,12 +15,12 @@ on:
         default: false
         type: boolean
       target_version:
-        description: 'Target version to build (e.g., 0.3.1). Leave empty for latest.'
+        description: 'Target source version to build (e.g. v0.3.1 or 0.3.1). Leave empty for latest.'
         required: false
         default: ''
         type: string
       publish_to_store:
-        description: 'Publish to LazyCat App Store'
+        description: 'Reserved for lzcat-trigger compatibility'
         required: false
         default: false
         type: boolean
@@ -271,4 +277,6 @@ jobs:
           fi
 
           git commit -m "Update Paperclip to version ${{ steps.version.outputs.build_version }}"
+          git fetch origin main
+          git rebase origin/main
           git push origin HEAD:main
