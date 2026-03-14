@@ -16,7 +16,7 @@ application:
       backend: http://bootstrap-ui:8080/
 services:
   paperclip:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:a5b140e5f22c2ea4
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:43ce5f175959f4c7
     depends_on:
       - postgres
     setup_script: |
@@ -39,7 +39,7 @@ services:
     binds:
       - /lzcapp/var/data:/paperclip
   bootstrap-ui:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:a5b140e5f22c2ea4
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:43ce5f175959f4c7
     depends_on:
       - paperclip
       - postgres
