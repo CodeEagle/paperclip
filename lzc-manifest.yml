@@ -31,15 +31,6 @@ services:
       mkdir -p /paperclip/instances/default/plugins
       # Set ownership to node user (UID 1000)
       chown -R 1000:1000 /paperclip
-    command: >-
-      /bin/sh -c 'echo "Waiting for PostgreSQL to be ready...";
-      for i in $$(seq 1 120); do
-      if node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" 2>/dev/null; then
-      echo "PostgreSQL is ready"; break; fi;
-      echo "Waiting for PostgreSQL... ($$i/120)";
-      sleep 1; done;
-      echo "Starting paperclip server...";
-      exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - HOST=0.0.0.0
