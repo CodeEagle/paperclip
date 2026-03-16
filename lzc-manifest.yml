@@ -16,7 +16,12 @@ application:
       backend: http://bootstrap-ui:8080/
 services:
   paperclip:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:9dc8615bfb0924dc
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:02559aad070acdb0
+    command: >-
+      /bin/sh -c 'for i in $(seq 1 60); do
+      node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" &&
+      break; sleep 2; done;
+      exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js'
     depends_on:
       - postgres
     environment:
@@ -35,7 +40,7 @@ services:
     binds:
       - /lzcapp/var/data:/paperclip
   bootstrap-ui:
-    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:9dc8615bfb0924dc
+    image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:02559aad070acdb0
     depends_on:
       - paperclip
       - postgres
@@ -43,19 +48,15 @@ services:
       /bin/bash -lc 'CONFIG_PATH=/paperclip/instances/default/config.json;
       BOOTSTRAP_LOG=/paperclip/instances/default/bootstrap-invite.log;
       BOOTSTRAP_URL_FILE=/paperclip/instances/default/bootstrap-invite-url.txt;
-      # Ensure directories exist (setup_script should have created them)
-      mkdir -p /paperclip/instances/default/logs 2>/dev/null || true;
-      mkdir -p /paperclip/instances/default/secrets 2>/dev/null || true;
-      mkdir -p /paperclip/instances/default/workspaces 2>/dev/null || true;
-      # Wait for PostgreSQL to be ready
+      mkdir -p /paperclip/instances/default/logs;
+      node /lzcapp/pkg/content/bootstrap-ui/server.mjs &
+      SERVER_PID=$$!;
       for i in $(seq 1 60); do
-      if node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" 2>/dev/null; then break; fi;
-      echo "Waiting for PostgreSQL... ($$i/60)";
-      sleep 1; done;
-      if [ ! -f "$$CONFIG_PATH" ]; then echo "Running onboard..."; timeout 60s pnpm paperclipai onboard --yes --data-dir "$$PAPERCLIP_HOME"
-      >"$$BOOTSTRAP_LOG" 2>&1 || true; else echo "Config exists, skipping onboard"; fi;
-      if ! grep -q "/invite/pcp_bootstrap_" "$$BOOTSTRAP_LOG" 2>/dev/null; then
-      echo "Running bootstrap-ceo...";
+      node -e "const net=require(\"net\"); const s=net.createConnection({host:\"postgres\",port:5432},()=>{s.end();process.exit(0)}); s.on(\"error\",()=>process.exit(1)); setTimeout(()=>process.exit(1),1000)" &&
+      break; sleep 2; done;
+      if [ ! -f "$$CONFIG_PATH" ]; then timeout 60s pnpm paperclipai onboard --yes --data-dir "$$PAPERCLIP_HOME"
+      >"$$BOOTSTRAP_LOG" 2>&1 || true; else : >"$$BOOTSTRAP_LOG"; fi;
+      if [ ! -f "$$BOOTSTRAP_URL_FILE" ] && ! grep -q "/invite/pcp_bootstrap_" "$$BOOTSTRAP_LOG" 2>/dev/null; then
       if timeout 20s pnpm paperclipai auth bootstrap-ceo --data-dir "$$PAPERCLIP_HOME"
       --base-url "$$PAPERCLIP_PUBLIC_URL" >>"$$BOOTSTRAP_LOG" 2>&1; then
       true; else status=$$?; [ "$$status" = "124" ] || echo
@@ -65,7 +66,7 @@ services:
       "$$BOOTSTRAP_LOG" | tail -n 1 || true)";
       if [ -n "$$invite_url" ]; then printf "%s\n" "$$invite_url" | tee
       "$$BOOTSTRAP_URL_FILE"; fi;
-      exec node /lzcapp/pkg/content/bootstrap-ui/server.mjs'
+      wait $$SERVER_PID'
     environment:
       - PORT=8080
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
