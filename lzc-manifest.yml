@@ -19,18 +19,6 @@ services:
     image: registry.lazycat.cloud/invokerlaw/codeeagle/paperclip:9dc8615bfb0924dc
     depends_on:
       - postgres
-    setup_script: |
-      # Create all required directories upfront
-      mkdir -p /paperclip/instances/default/logs
-      mkdir -p /paperclip/instances/default/data/storage
-      mkdir -p /paperclip/instances/default/data/backups
-      mkdir -p /paperclip/instances/default/data/run-logs
-      mkdir -p /paperclip/instances/default/data/plugins
-      mkdir -p /paperclip/instances/default/secrets
-      mkdir -p /paperclip/instances/default/workspaces
-      mkdir -p /paperclip/instances/default/plugins
-      # Set ownership to node user (UID 1000)
-      chown -R 1000:1000 /paperclip
     environment:
       - DATABASE_URL=postgres://paperclip:paperclip@postgres:5432/paperclip
       - HOST=0.0.0.0
