@@ -14,34 +14,55 @@ async function readInviteUrl() {
   return invitePattern.test(value) ? value : "";
 }
 
+async function checkInviteExpired(inviteUrl) {
+  if (!inviteUrl) return false;
+  try {
+    const parsed = new URL(inviteUrl);
+    const res = await fetch(new URL(parsed.pathname, target), {
+      redirect: "manual",
+      headers: {
+        "host": parsed.host,
+        "x-forwarded-host": parsed.host,
+        "x-forwarded-proto": parsed.protocol.replace(":", ""),
+      },
+    });
+    // 4xx means invite is gone/consumed → registration done
+    return res.status >= 400;
+  } catch {
+    return false;
+  }
+}
+
 async function getPaperclipHealth() {
   const inviteUrl = await readInviteUrl();
+
+  if (inviteUrl) {
+    const expired = await checkInviteExpired(inviteUrl);
+    if (expired) {
+      // Invite consumed → registration done, proxy to main app
+      return { reachable: true, bootstrapPending: false, bootstrapInviteActive: false, inviteUrl };
+    }
+    // Invite still valid → show it to the user
+    return { reachable: true, bootstrapPending: true, bootstrapInviteActive: true, inviteUrl };
+  }
+
+  // No invite URL yet — still initializing, check health for completeness
   try {
     const response = await fetch(new URL("/api/health", target), {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {
-      return {
-        reachable: false,
-        bootstrapPending: true,
-        bootstrapInviteActive: Boolean(inviteUrl),
-        inviteUrl,
-      };
+      return { reachable: false, bootstrapPending: true, bootstrapInviteActive: false, inviteUrl: "" };
     }
     const data = await response.json();
     return {
       reachable: true,
       bootstrapPending: data.bootstrapStatus === "bootstrap_pending",
       bootstrapInviteActive: Boolean(data.bootstrapInviteActive),
-      inviteUrl,
+      inviteUrl: "",
     };
   } catch {
-    return {
-      reachable: false,
-      bootstrapPending: Boolean(inviteUrl),
-      bootstrapInviteActive: Boolean(inviteUrl),
-      inviteUrl,
-    };
+    return { reachable: false, bootstrapPending: true, bootstrapInviteActive: false, inviteUrl: "" };
   }
 }
 
@@ -55,11 +76,13 @@ function escapeHtml(value) {
 }
 
 function bootstrapPage(initialState) {
-  const inviteBlock = initialState.inviteUrl
+  const showInvite = initialState.inviteUrl && initialState.bootstrapInviteActive;
+  const inviteBlock = showInvite
     ? `<a class="primary" href="${escapeHtml(initialState.inviteUrl)}">Open bootstrap invite</a>
        <pre id="invite-url">${escapeHtml(initialState.inviteUrl)}</pre>`
-    : `<div class="hint">Preparing the first admin invite URL. This page will update automatically.</div>
-       <pre id="invite-url">Waiting for bootstrap invite...</pre>`;
+    : `<div class="hint"><span class="spinner"></span>Initializing Paperclip — running first-time setup in the background. This may take 20–30 seconds.</div>
+       <pre id="invite-url">Waiting for bootstrap invite...</pre>
+       <div class="elapsed" id="elapsed"></div>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -81,6 +104,9 @@ function bootstrapPage(initialState) {
     pre { margin:0; padding:16px; border-radius:18px; background:#231f1c; color:#f8efe4; overflow:auto; white-space:pre-wrap; word-break:break-all; }
     .hint { padding:16px; border-radius:18px; background:#f6ead8; color:#5d4f40; border:1px solid #e3d4be; }
     .footer { margin-top:18px; font-size:13px; color:var(--muted); }
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid #c9b49a; border-top-color:#b85c38; border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .elapsed { font-size:12px; color:var(--muted); margin-top:6px; }
   </style>
 </head>
 <body>
@@ -90,7 +116,7 @@ function bootstrapPage(initialState) {
       <h1>Paperclip is preparing the first admin invite</h1>
       <p>Bootstrap runs automatically in the background. As soon as the first CEO invite URL is ready, this page will surface it here and you can open it directly.</p>
       <div class="stack" id="invite-block">${inviteBlock}</div>
-      <div class="footer">Once the first admin is created, this page will hand traffic back to Paperclip automatically.</div>
+      <div class="footer">Once the first admin is created, this page will hand traffic back to Paperclip automatically. Already have an account? <a href="/login" style="color:var(--accent)">Sign in →</a></div>
     </section>
   </main>
   <script>
@@ -98,18 +124,24 @@ function bootstrapPage(initialState) {
       try {
         const res = await fetch("${statusPath}", { headers: { Accept: "application/json" } });
         const state = await res.json();
-        if (!state.bootstrapPending && state.reachable) {
+        if (!state.bootstrapPending) {
           window.location.reload();
           return;
         }
         const block = document.getElementById("invite-block");
-        if (state.inviteUrl) {
+        if (state.inviteUrl && state.bootstrapInviteActive) {
           block.innerHTML = '<a class="primary" href="' + state.inviteUrl + '">Open bootstrap invite</a><pre id="invite-url"></pre>';
           document.getElementById("invite-url").textContent = state.inviteUrl;
         }
       } catch {}
     }
+    const start = Date.now();
+    function updateElapsed() {
+      const el = document.getElementById("elapsed");
+      if (el) el.textContent = "Running for " + Math.floor((Date.now() - start) / 1000) + "s…";
+    }
     setInterval(refresh, 2000);
+    setInterval(updateElapsed, 1000);
     refresh();
   </script>
 </body>
@@ -169,7 +201,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(state));
     return;
   }
-  if ((state.bootstrapPending || state.inviteUrl) && (req.url === "/" || req.url?.startsWith("/?"))) {
+  if (state.bootstrapPending && (req.url === "/" || req.url?.startsWith("/?"))) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     res.end(bootstrapPage(state));
     return;
